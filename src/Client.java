@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public class Client {
+    private String clientName;
     private Socket socket;
     private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
@@ -22,6 +23,12 @@ public class Client {
     private final String clientPath = "./testFiles/client/";
 
     public Client(String addr, int portNumber) {
+        String userCmd = null;
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter your name : ");
+        clientName = scanner.nextLine();
+
         try {
             socket = new Socket(addr, portNumber);
             System.out.println("Connected");
@@ -36,9 +43,7 @@ public class Client {
             return;
         }
 
-        String userCmd = null;
         String fileName = null;
-        Scanner scanner = new Scanner(System.in);
 
         while (userCmd == null || !userCmd.equals("exit")) {
             System.out.print("Enter command: ");
@@ -230,6 +235,10 @@ public class Client {
         } catch (IOException e) {
             System.out.println(e);
         }
+    }
+
+    public String getClientName() {
+        return clientName;
     }
 
     public static void main(String[] args) {
