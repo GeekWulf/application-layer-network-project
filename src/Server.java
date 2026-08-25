@@ -36,6 +36,12 @@ public class Server {
             System.out.println(e);
         }
 
+        listenToCliens();
+
+        closeConnection();
+    }
+
+    public void listenToCliens() {
         while (true) {
             Message requestMessage = receiveRequestMessage();
             RequestMessageHeader requestMessageHeader = (RequestMessageHeader) requestMessage.getMessageHeader();
@@ -69,13 +75,11 @@ public class Server {
                 String fileName = requestMessageHeader.getFileName();
                 sendFile(requestMessage);
             } else if (commandCode == RequestCommand.PUSH_FILE.getCommand()) {
-                creatFile(requestMessage);
+                recieveFile(requestMessage);
             } else if (commandCode == RequestCommand.END.getCommand()) {
                 break;
             }
         }
-
-        closeConnection();
     }
 
     public void sendFile(Message message) {
@@ -120,7 +124,7 @@ public class Server {
         }
     }
 
-    public void creatFile(Message message) {
+    public void recieveFile(Message message) {
         String fileName = message.getMessageHeader().getFileName();
         Path path = Paths.get(serverDirectoryPath + fileName);
         FileOutputStream fileOutputStream = null;
