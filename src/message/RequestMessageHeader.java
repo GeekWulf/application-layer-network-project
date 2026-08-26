@@ -120,7 +120,7 @@ public class RequestMessageHeader implements MessageHeader {
                 + "file name lenght : " + fileNameLenght + "\n"
                 + "file name : " + fileName + "\n"
                 + "current byte : " + currentByte + "\n"
-                + "payload lenght : " + payloadLength + "\n"
+                + "payload length : " + payloadLength + "\n"
                 + "eof flag : " + EOFFlag + "\n"
                 + "teacher flag : " + teacherFlag + "\n";
     }

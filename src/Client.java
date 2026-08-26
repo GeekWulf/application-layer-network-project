@@ -117,7 +117,7 @@ public class Client {
         if (statusCode == ResponseStatus.AUTHORIZED.getStatus()) {
             byte[] filenameBytes =  fileName.getBytes(StandardCharsets.UTF_8);
             int fileNameLength = filenameBytes.length;
-            MessageHeader messageHeader = new RequestMessageHeader(RequestCommand.GET_FILE.getCommand(), fileNameLength, fileName);
+            MessageHeader messageHeader = new RequestMessageHeader(RequestCommand.GET_FILE.getCommand(), fileNameLength, fileName, 0, 0);
             Message requestMessage = new Message(messageHeader, null);
 
             sendMessage(requestMessage);
@@ -134,7 +134,6 @@ public class Client {
 
         if (statusCode == ResponseStatus.NOT_AUTHORIZED.getStatus()) {
             System.out.println("Not authorized");
-
             return;
         } else  if (statusCode == ResponseStatus.AUTHORIZED.getStatus()) {
             try {
@@ -193,6 +192,11 @@ public class Client {
 
     public void sendMessage(Message requestMessage) {
         try {
+            if (clientRole.equals("teacher")) {
+                RequestMessageHeader r = (RequestMessageHeader)requestMessage.getMessageHeader();
+                r.setTeacherFlag(true);
+            }
+
             requestMessage.writeOutputStream(dataOutputStream);
             dataOutputStream.flush();
         } catch (IOException e) {
