@@ -46,36 +46,47 @@ public class ServerThread implements Runnable {
         while (true) {
             Message requestMessage = receiveRequestMessage();
             RequestMessageHeader requestMessageHeader = (RequestMessageHeader) requestMessage.getMessageHeader();
-
             int commandCode = requestMessageHeader.getCommandCode();
 
-            if (commandCode == RequestCommand.REQUEST_FILE.getCommand() || commandCode == RequestCommand.REQUEST_PUSH.getCommand()) {
+            if (commandCode == RequestCommand.REQUEST_FILE.getCommand() || commandCode == RequestCommand.REQUEST_PUSH.getCommand() || commandCode == RequestCommand.REQUEST_DELETE.getCommand()) {
                 String fileName = requestMessageHeader.getFileName();
                 byte[] filenameBytes = fileName.getBytes(StandardCharsets.UTF_8);
                 int fileNameLength = filenameBytes.length;
 
                 MessageHeader messageHeader = null;
                 Message message = null;
+                int responseStatusCode = 0;
 
                 if (commandCode == RequestCommand.REQUEST_FILE.getCommand()) {
                     if (!checkFileExists(fileName)) {
-                        messageHeader = new ResponseMessageHeader(ResponseStatus.FILE_NOT_FOUND.getStatus(), fileNameLength, fileName);
-                        message = new Message(messageHeader, null);
-
-                        sendResponseMessage(message);
-
-                        continue;
+                        responseStatusCode = ResponseStatus.FILE_NOT_FOUND.getStatus();
+                    } else {
+                        responseStatusCode = ResponseStatus.AUTHORIZED.getStatus();
+                    }
+                } else if (commandCode == RequestCommand.REQUEST_PUSH.getCommand()) {
+                    responseStatusCode = ResponseStatus.AUTHORIZED.getStatus();
+                } else if (commandCode == RequestCommand.REQUEST_DELETE.getCommand()) {
+                    if (requestMessageHeader.getTeacherFlag() == true) {
+                        if (checkFileExists(fileName)) {
+                            responseStatusCode =  ResponseStatus.AUTHORIZED.getStatus();
+                        } else {
+                            responseStatusCode = ResponseStatus.FILE_NOT_FOUND.getStatus();
+                        }
+                    } else {
+                        responseStatusCode = ResponseStatus.NOT_AUTHORIZED.getStatus();
                     }
                 }
 
-                messageHeader = new ResponseMessageHeader(ResponseStatus.AUTHORIZED.getStatus(), fileNameLength, fileName);
+                messageHeader = new ResponseMessageHeader(responseStatusCode, fileNameLength, fileName);
                 message = new Message(messageHeader, null);
-
                 sendResponseMessage(message);
             } else if (commandCode == RequestCommand.GET_FILE.getCommand()) {
                 sendFile(requestMessage);
             } else if (commandCode == RequestCommand.PUSH_FILE.getCommand()) {
                 recieveFile(requestMessage);
+            } else if (commandCode == RequestCommand.DELETE_FILE.getCommand()) {
+                String fileName = requestMessageHeader.getFileName();
+                deleteFile(fileName);
             } else if (commandCode == RequestCommand.END.getCommand()) {
                 break;
             }
@@ -138,11 +149,12 @@ public class ServerThread implements Runnable {
                 byte[] payload = message.getPayload();
                 fileOutputStream.write(payload);
 
+                currentByte = message.getMessageHeader().getCurrentByte();
+
                 if (message.getMessageHeader().getEOFFlag() == true) {
                     break;
                 } else {
                     int fileNameLength = message.getMessageHeader().getFileNameLenght();
-                    currentByte = message.getMessageHeader().getCurrentByte();
 
                     MessageHeader responseMessageHeader = new ResponseMessageHeader(ResponseStatus.IN_PROGRESS.getStatus(), fileNameLength, fileName, currentByte, 0);
                     message = new Message(responseMessageHeader, null);
@@ -168,6 +180,20 @@ public class ServerThread implements Runnable {
         sendResponseMessage(responseMessage);
     }
 
+    public void deleteFile(String fileName) {
+        Path path = Paths.get(serverDirectoryPath + fileName);
+
+        try {
+            Files.delete(path);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        MessageHeader reponseMessageHeader = new ResponseMessageHeader(ResponseStatus.DELETE_SUCCESS.getStatus(), fileName.length(), fileName);
+        Message responseMessage = new Message(reponseMessageHeader, null);
+        sendResponseMessage(responseMessage);
+    }
+
     public void sendResponseMessage(Message message) {
         try {
             message.writeOutputStream(dataOutputStream);
@@ -181,7 +207,7 @@ public class ServerThread implements Runnable {
 
     public Message receiveRequestMessage() {
         Message message = null;
-        MessageHeader messageHeader = null;
+        RequestMessageHeader messageHeader = null;
 
         try {
             int commandCode = dataInputStream.readInt();
@@ -194,6 +220,7 @@ public class ServerThread implements Runnable {
             int currentByte = dataInputStream.readInt();
 
             boolean EOFFlag = dataInputStream.readBoolean();
+            boolean teacherFlag = dataInputStream.readBoolean();
 
             int payloadLength = dataInputStream.readInt();
             byte[] payload = new byte[payloadLength];
@@ -201,6 +228,7 @@ public class ServerThread implements Runnable {
 
             messageHeader = new RequestMessageHeader(commandCode, fileNameLength, fileName, currentByte, payloadLength);
             messageHeader.setEOFFlag(EOFFlag);
+            messageHeader.setTeacherFlag(teacherFlag);
             message = new Message(messageHeader, payload);
 
             System.out.println(message.toString());

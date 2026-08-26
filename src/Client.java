@@ -16,6 +16,7 @@ import java.util.Scanner;
 
 public class Client {
     private String clientName;
+    private String clientRole;
     private Socket socket;
     private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
@@ -26,8 +27,8 @@ public class Client {
         String userCmd = null;
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter your name : ");
-        clientName = scanner.nextLine();
+        System.out.print("What is your role [teacher/student]: ");
+        clientRole = scanner.nextLine();
 
         try {
             socket = new Socket(addr, portNumber);
@@ -59,6 +60,11 @@ public class Client {
                 fileName = scanner.nextLine();
 
                 sendFile(fileName);
+            } else if (userCmd.equals("delete")) {
+                System.out.print("Enter file name: ");
+                fileName = scanner.nextLine();
+
+                deleteFile(fileName);
             }
         }
 
@@ -115,7 +121,6 @@ public class Client {
             Message requestMessage = new Message(messageHeader, null);
 
             sendMessage(requestMessage);
-
             recieveFile();
         } else if (statusCode == ResponseStatus.FILE_NOT_FOUND.getStatus()) {
             System.out.println("File not found");
@@ -129,6 +134,8 @@ public class Client {
 
         if (statusCode == ResponseStatus.NOT_AUTHORIZED.getStatus()) {
             System.out.println("Not authorized");
+
+            return;
         } else  if (statusCode == ResponseStatus.AUTHORIZED.getStatus()) {
             try {
                 String path = clientPath + fileName;
@@ -166,6 +173,24 @@ public class Client {
         responseMessage = receiveMessage();
     }
 
+    public void deleteFile(String fileName) {
+        Message responseMessage = sendValifyAccessMessage(fileName, RequestCommand.REQUEST_DELETE.getCommand());
+        ResponseMessageHeader responseMessageHeader = (ResponseMessageHeader) responseMessage.getMessageHeader();
+        int statusCode = responseMessageHeader.getStatusCode();
+
+        if (statusCode == ResponseStatus.AUTHORIZED.getStatus()) {
+            MessageHeader requestMessageHeader = new RequestMessageHeader(RequestCommand.DELETE_FILE.getCommand(), fileName.length(), fileName);
+            Message requestMessage = new Message(requestMessageHeader, null);
+
+            sendMessage(requestMessage);
+            responseMessage = receiveMessage();
+        } else if (statusCode == ResponseStatus.FILE_NOT_FOUND.getStatus()) {
+            System.out.println("File not found");
+        } else if (statusCode == ResponseStatus.NOT_AUTHORIZED.getStatus()) {
+            System.out.println("You have no permission to delete file");
+        }
+    }
+
     public void sendMessage(Message requestMessage) {
         try {
             requestMessage.writeOutputStream(dataOutputStream);
@@ -177,7 +202,7 @@ public class Client {
 
     public Message receiveMessage() {
         Message message = null;
-        MessageHeader messageHeader = null;
+        ResponseMessageHeader messageHeader = null;
 
         try {
             int statusCode = dataInputStream.readInt();
@@ -212,11 +237,14 @@ public class Client {
         byte[] filenameBytes =  fileName.getBytes(StandardCharsets.UTF_8);
         int fileNameLength = filenameBytes.length;
 
-        MessageHeader messageHeader = new RequestMessageHeader(method, fileNameLength, fileName);
+        RequestMessageHeader messageHeader = new RequestMessageHeader(method, fileNameLength, fileName);
         Message requestMessage = new Message(messageHeader, null);
 
-        sendMessage(requestMessage);
+        if (clientRole.equals("teacher")) {
+            messageHeader.setTeacherFlag(true);
+        }
 
+        sendMessage(requestMessage);
         Message responseMessage = receiveMessage();
 
         return responseMessage;
@@ -235,10 +263,6 @@ public class Client {
         } catch (IOException e) {
             System.out.println(e);
         }
-    }
-
-    public String getClientName() {
-        return clientName;
     }
 
     public static void main(String[] args) {

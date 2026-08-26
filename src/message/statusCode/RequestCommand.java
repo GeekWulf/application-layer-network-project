@@ -1,11 +1,13 @@
 package src.message.statusCode;
 
 public enum RequestCommand {
-    REQUEST_FILE(90, "REQUEST_FILE"),
-    REQUEST_PUSH(91, "REQUEST_PUSH"),
+    REQUEST_FILE(90, "REQUEST FILE"),
+    REQUEST_PUSH(91, "REQUEST PUSH"),
+    REQUEST_DELETE(92, "REQUEST DELETE"),
     GET_FILE(100, "GET FILE"),
     PUSH_FILE(200, "PUSH FILE"),
-    END(300, "END");
+    DELETE_FILE(300, "DELETE FILE"),
+    END(900, "END");
 
     private int command;
     private String method;

@@ -95,6 +95,9 @@ public class ResponseMessageHeader implements MessageHeader {
             case 202 :
                 phrase = ResponseStatus.PUSH_FAILED.getPharse();
                 break;
+            case 301:
+                phrase = ResponseStatus.DELETE_SUCCESS.getPharse();
+                break;
             case 500 :
                 phrase = ResponseStatus.AUTHORIZED.getPharse();
                 break;
@@ -105,11 +108,11 @@ public class ResponseMessageHeader implements MessageHeader {
                 break;
         }
 
-        return "[ Response Message ] " + phrase + "\n"
+        return "[ Response Message ] " + phrase + " " + statusCode + "\n"
                 + "file name lenght : " + fileNameLenght + "\n"
                 + "file name : " + fileName + "\n"
                 + "current byte : " + currentByte + "\n"
                 + "payload lenght : " + payloadLength + "\n"
-                + "end of file flag : " + EOFFlag + "\n";
+                + "eof flag : " + EOFFlag + "\n";
     }
 }
