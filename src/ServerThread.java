@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 public class ServerThread implements Runnable {
@@ -137,13 +138,16 @@ public class ServerThread implements Runnable {
 
     public void recieveFile(Message message) {
         String fileName = message.getMessageHeader().getFileName();
-        Path path = Paths.get(serverDirectoryPath + fileName);
+        Path tempPath = Paths.get(serverDirectoryPath + fileName + ".tmp");
+        Path finalPath = Paths.get(serverDirectoryPath + fileName);
+
         FileOutputStream fileOutputStream = null;
 
         int currentByte = 0;
+        boolean transmissionSuccess = false;
 
         try {
-            fileOutputStream = new FileOutputStream(path.toFile());
+            fileOutputStream = new FileOutputStream(tempPath.toFile());
 
             while (true) {
                 byte[] payload = message.getPayload();
@@ -152,6 +156,7 @@ public class ServerThread implements Runnable {
                 currentByte = message.getMessageHeader().getCurrentByte();
 
                 if (message.getMessageHeader().getEOFFlag() == true) {
+                    transmissionSuccess = true;
                     break;
                 } else {
                     int fileNameLength = message.getMessageHeader().getFileNameLenght();
@@ -166,8 +171,20 @@ public class ServerThread implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
+            if (fileOutputStream != null) {
+                try {
+                    fileOutputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             try {
-                fileOutputStream.close();
+                if (transmissionSuccess) {
+                    Files.move(tempPath, finalPath, StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    Files.deleteIfExists(finalPath);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

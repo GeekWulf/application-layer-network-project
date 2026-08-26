@@ -1,7 +1,6 @@
 package src.message;
 
 import src.message.statusCode.RequestCommand;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -116,8 +115,8 @@ public class RequestMessageHeader implements MessageHeader {
                 break;
         }
 
-        return "[ Reqest Message ] " + method + "\n"
-                + "file name lenght : " + fileNameLenght + "\n"
+        return "[ Request Message ] " + method + "\n"
+                + "file name lengtj : " + fileNameLenght + "\n"
                 + "file name : " + fileName + "\n"
                 + "current byte : " + currentByte + "\n"
                 + "payload length : " + payloadLength + "\n"

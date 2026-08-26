@@ -9,8 +9,10 @@ import src.message.statusCode.ResponseStatus;
 import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -73,13 +75,17 @@ public class Client {
 
     public void recieveFile() {
         FileOutputStream fileOutputStream = null;
+        Path tempPath = null;
+        Path finalPath = null;
+        boolean transmissionSuccess = false;
 
         try {
             Message message = receiveMessage();
             String fileName = message.getMessageHeader().getFileName();
-            Path path = Paths.get(clientPath + fileName);
+            tempPath = Paths.get(clientPath + fileName + ".tmp");
+            finalPath = Paths.get(clientPath + fileName);
 
-            fileOutputStream = new FileOutputStream(path.toFile());
+            fileOutputStream = new FileOutputStream(tempPath.toFile());
 
             while (true) {
                 byte[] payload = message.getPayload();
@@ -89,6 +95,7 @@ public class Client {
                 int currentByte = message.getMessageHeader().getCurrentByte();
 
                 if (message.getMessageHeader().getEOFFlag() == true) {
+                    transmissionSuccess = true;
                     break;
                 } else {
                     MessageHeader requestMessageHeader = new RequestMessageHeader(RequestCommand.GET_FILE.getCommand(), fileNameLength, fileName, currentByte, 0);
@@ -101,10 +108,22 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
+            if (fileOutputStream != null) {
+                try {
+                    fileOutputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             try {
-                fileOutputStream.close();
+                if (transmissionSuccess && tempPath != null && finalPath != null) {
+                    Files.move(tempPath, finalPath, StandardCopyOption.REPLACE_EXISTING);
+                } else if (!transmissionSuccess && tempPath != null) {
+                    Files.deleteIfExists(tempPath);
+                }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
             }
         }
     }
