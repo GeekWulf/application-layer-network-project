@@ -6,6 +6,8 @@ import src.message.RequestMessageHeader;
 import src.message.ResponseMessageHeader;
 import src.message.statusCode.RequestCommand;
 import src.message.statusCode.ResponseStatus;
+import src.security.SecureStreamReader;
+import src.security.SecureStreamWriter;
 
 import java.io.*;
 import java.net.Socket;
@@ -27,10 +29,14 @@ public class ServerThread implements Runnable {
         this.serverDirectoryPath = serverDirectoryPath;
 
         try {
-            dataInputStream = new DataInputStream(socket.getInputStream());
-            dataOutputStream = new DataOutputStream(socket.getOutputStream());
+//            dataInputStream = new DataInputStream(socket.getInputStream());
+//            dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            dataInputStream = SecureStreamReader.getDecryptedStream(socket.getInputStream());
+            dataOutputStream = SecureStreamWriter.getEncryptedStream(socket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

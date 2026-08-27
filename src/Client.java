@@ -5,6 +5,8 @@ import src.message.Message;
 import src.message.MessageHeader;
 import src.message.statusCode.RequestCommand;
 import src.message.statusCode.ResponseStatus;
+import src.security.SecureStreamReader;
+import src.security.SecureStreamWriter;
 
 import java.net.*;
 import java.io.*;
@@ -36,14 +38,18 @@ public class Client {
             socket = new Socket(addr, portNumber);
             System.out.println("Connected.");
 
-            dataInputStream = new DataInputStream(socket.getInputStream());
-            dataOutputStream = new DataOutputStream(socket.getOutputStream());
+//            dataInputStream = new DataInputStream(socket.getInputStream());
+//            dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            dataInputStream = SecureStreamReader.getDecryptedStream(socket.getInputStream());
+            dataOutputStream = SecureStreamWriter.getEncryptedStream(socket.getOutputStream());
         } catch (UnknownHostException e) {
             System.out.println(e);
             return;
         } catch (IOException e) {
             System.out.println(e);
             return;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         String fileName = null;
