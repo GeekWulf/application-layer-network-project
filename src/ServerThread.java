@@ -95,9 +95,11 @@ public class ServerThread implements Runnable {
     }
 
     public void sendFile(Message message) {
+        String fileName = message.getMessageHeader().getFileName();
+        String path = serverDirectoryPath + fileName;
+        int fileNameLength = message.getMessageHeader().getFileNameLenght();
+
         try {
-            String fileName = message.getMessageHeader().getFileName();
-            String path = serverDirectoryPath + fileName;
             File file = new File(path);
             FileInputStream fileInputStream = new FileInputStream(path);
 
@@ -108,14 +110,15 @@ public class ServerThread implements Runnable {
             while ((byteRead = fileInputStream.read(buffer)) != -1) {
                 int currentByte = message.getMessageHeader().getCurrentByte();
 
+//                if (currentByte > 8000) {
+//                    throw new IOException("Simulate read file fail.");
+//                }
+
                 byte[] payload = Arrays.copyOfRange(buffer, 0, byteRead);
                 currentByte += byteRead;
 
                 MessageHeader responseMessageHeader = null;
                 Message responseMessage = null;
-
-                byte[] fileNameBytes = message.getMessageHeader().getFileName().getBytes(StandardCharsets.UTF_8);
-                int fileNameLength = fileNameBytes.length;
 
                 if (currentByte == totalRead) {
                     responseMessageHeader = new ResponseMessageHeader(ResponseStatus.SUCCESS.getStatus(), fileNameLength, fileName, currentByte, byteRead);
@@ -132,12 +135,21 @@ public class ServerThread implements Runnable {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            MessageHeader errorMessageHeader = new ResponseMessageHeader(ResponseStatus.FAILED.getStatus(), fileNameLength, fileName);
+            Message errorMessage = new Message(errorMessageHeader, null);
+            errorMessageHeader.setEOFFlag(true);
+            sendResponseMessage(errorMessage);
         }
     }
 
     public void recieveFile(Message message) {
         String fileName = message.getMessageHeader().getFileName();
+        int fileNameLength = message.getMessageHeader().getFileNameLenght();
+
+//        String fakePath = "Z:/" + serverDirectoryPath + fileName;
+//        Path tempPath = Paths.get(fakePath + fileName + ".tmp");
+//        Path finalPath = Paths.get(fakePath + fileName);
+
         Path tempPath = Paths.get(serverDirectoryPath + fileName + ".tmp");
         Path finalPath = Paths.get(serverDirectoryPath + fileName);
 
@@ -159,8 +171,6 @@ public class ServerThread implements Runnable {
                     transmissionSuccess = true;
                     break;
                 } else {
-                    int fileNameLength = message.getMessageHeader().getFileNameLenght();
-
                     MessageHeader responseMessageHeader = new ResponseMessageHeader(ResponseStatus.IN_PROGRESS.getStatus(), fileNameLength, fileName, currentByte, 0);
                     message = new Message(responseMessageHeader, null);
 
@@ -169,7 +179,7 @@ public class ServerThread implements Runnable {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         } finally {
             if (fileOutputStream != null) {
                 try {
@@ -183,16 +193,21 @@ public class ServerThread implements Runnable {
                 if (transmissionSuccess) {
                     Files.move(tempPath, finalPath, StandardCopyOption.REPLACE_EXISTING);
                 } else {
-                    Files.deleteIfExists(finalPath);
+                    Files.deleteIfExists(tempPath);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        byte[] fileNameBytes = fileName.getBytes(StandardCharsets.UTF_8);
-        int fileNameLength = fileNameBytes.length;
-        ResponseMessageHeader responseMessageHeader = new ResponseMessageHeader(ResponseStatus.PUSH_SUCCESS.getStatus(), fileNameLength, fileName, currentByte, 0);
+        int responseStatusCode;
+        if  (transmissionSuccess) {
+            responseStatusCode = ResponseStatus.SUCCESS.getStatus();
+        } else {
+            responseStatusCode = ResponseStatus.PUSH_FAILED.getStatus();
+        }
+
+        ResponseMessageHeader responseMessageHeader = new ResponseMessageHeader(responseStatusCode, fileNameLength, fileName, currentByte, 0);
         Message responseMessage = new Message(responseMessageHeader, null);
         sendResponseMessage(responseMessage);
     }
@@ -250,7 +265,7 @@ public class ServerThread implements Runnable {
 
             System.out.println(message.toString());
         } catch (IOException e) {
-            System.out.println("Something went wrong");
+            System.out.println("Something went wrong.");
             System.out.println(e);
         }
 
@@ -259,7 +274,7 @@ public class ServerThread implements Runnable {
 
     public void closeConnection() {
         try {
-            System.out.println("Client disconnected");
+            System.out.println("Client disconnected.");
 
             dataOutputStream.close();
             dataInputStream.close();

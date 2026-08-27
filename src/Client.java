@@ -34,7 +34,7 @@ public class Client {
 
         try {
             socket = new Socket(addr, portNumber);
-            System.out.println("Connected");
+            System.out.println("Connected.");
 
             dataInputStream = new DataInputStream(socket.getInputStream());
             dataOutputStream = new DataOutputStream(socket.getOutputStream());
@@ -81,6 +81,13 @@ public class Client {
 
         try {
             Message message = receiveMessage();
+            ResponseMessageHeader responseMessageHeader = (ResponseMessageHeader) message.getMessageHeader();
+
+            if (responseMessageHeader.getStatusCode() == ResponseStatus.FAILED.getStatus()) {
+                System.out.println("Failed to receive file from server.");
+                return;
+            }
+
             String fileName = message.getMessageHeader().getFileName();
             tempPath = Paths.get(clientPath + fileName + ".tmp");
             finalPath = Paths.get(clientPath + fileName);
@@ -88,6 +95,10 @@ public class Client {
             fileOutputStream = new FileOutputStream(tempPath.toFile());
 
             while (true) {
+                if (responseMessageHeader.getStatusCode() == ResponseStatus.FAILED.getStatus()) {
+                    break;
+                }
+
                 byte[] payload = message.getPayload();
                 fileOutputStream.write(payload);
 
@@ -103,6 +114,7 @@ public class Client {
 
                     sendMessage(requestMessage);
                     message = receiveMessage();
+                    responseMessageHeader = (ResponseMessageHeader) message.getMessageHeader();
                 }
             }
         } catch (IOException e) {
@@ -121,6 +133,7 @@ public class Client {
                     Files.move(tempPath, finalPath, StandardCopyOption.REPLACE_EXISTING);
                 } else if (!transmissionSuccess && tempPath != null) {
                     Files.deleteIfExists(tempPath);
+                    System.out.println("Failed to receive file from server.");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -142,7 +155,7 @@ public class Client {
             sendMessage(requestMessage);
             recieveFile();
         } else if (statusCode == ResponseStatus.FILE_NOT_FOUND.getStatus()) {
-            System.out.println("File not found");
+            System.out.println("File not found.");
         }
     }
 
@@ -152,7 +165,7 @@ public class Client {
         int statusCode = responseMessageHeader.getStatusCode();
 
         if (statusCode == ResponseStatus.NOT_AUTHORIZED.getStatus()) {
-            System.out.println("Not authorized");
+            System.out.println("Not authorized.");
             return;
         } else  if (statusCode == ResponseStatus.AUTHORIZED.getStatus()) {
             try {
@@ -178,13 +191,21 @@ public class Client {
                     }
 
                     sendMessage(requestMessage);
-
                     if (requestMessageHeader.getEOFFlag() != true) {
                         responseMessage = receiveMessage();
                     }
+
+                    responseMessageHeader = (ResponseMessageHeader) responseMessage.getMessageHeader();
+                    if (responseMessageHeader.getStatusCode() == ResponseStatus.PUSH_FAILED.getStatus()) {
+                        fileInputStream.close();
+                        throw new IOException("Failed to send file to server.");
+                    }
                 }
+
+                fileInputStream.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Failed to push file to server.");
+                return;
             }
         }
 
@@ -203,9 +224,9 @@ public class Client {
             sendMessage(requestMessage);
             responseMessage = receiveMessage();
         } else if (statusCode == ResponseStatus.FILE_NOT_FOUND.getStatus()) {
-            System.out.println("File not found");
+            System.out.println("File not found.");
         } else if (statusCode == ResponseStatus.NOT_AUTHORIZED.getStatus()) {
-            System.out.println("You have no permission to delete file");
+            System.out.println("You have no permission to delete file.");
         }
     }
 
@@ -249,7 +270,7 @@ public class Client {
 
             System.out.println(message.toString());
         } catch (IOException e) {
-            System.out.println("Something went wrong");
+            System.out.println("Something went wrong.");
             System.out.println(e);
         }
 
