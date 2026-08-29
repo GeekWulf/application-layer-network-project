@@ -116,7 +116,7 @@ public class RequestMessageHeader implements MessageHeader {
         }
 
         return "[ Request Message ] " + method + "\n"
-                + "file name lengtj : " + fileNameLenght + "\n"
+                + "file name length : " + fileNameLenght + "\n"
                 + "file name : " + fileName + "\n"
                 + "current byte : " + currentByte + "\n"
                 + "payload length : " + payloadLength + "\n"
