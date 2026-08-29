@@ -6,8 +6,6 @@ import java.io.*;
 public class Server {
     private Socket socket;
     private ServerSocket serverSocket;
-    private DataOutputStream dataOutputStream;
-    private DataInputStream dataInputStream;
 
     private final String serverDirectoryPath = "./testFiles/server/";
 
