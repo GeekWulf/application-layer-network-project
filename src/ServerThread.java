@@ -29,10 +29,10 @@ public class ServerThread implements Runnable {
         this.serverDirectoryPath = serverDirectoryPath;
 
         try {
-//            dataInputStream = new DataInputStream(socket.getInputStream());
-//            dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            dataInputStream = SecureStreamReader.getDecryptedStream(socket.getInputStream());
-            dataOutputStream = SecureStreamWriter.getEncryptedStream(socket.getOutputStream());
+            dataInputStream = new DataInputStream(socket.getInputStream());
+            dataOutputStream = new DataOutputStream(socket.getOutputStream());
+//            dataInputStream = SecureStreamReader.getDecryptedStream(socket.getInputStream());
+//            dataOutputStream = SecureStreamWriter.getEncryptedStream(socket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {

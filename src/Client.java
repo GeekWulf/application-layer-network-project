@@ -38,10 +38,10 @@ public class Client {
             socket = new Socket(addr, portNumber);
             System.out.println("Connected.");
 
-//            dataInputStream = new DataInputStream(socket.getInputStream());
-//            dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            dataInputStream = SecureStreamReader.getDecryptedStream(socket.getInputStream());
-            dataOutputStream = SecureStreamWriter.getEncryptedStream(socket.getOutputStream());
+            dataInputStream = new DataInputStream(socket.getInputStream());
+            dataOutputStream = new DataOutputStream(socket.getOutputStream());
+//            dataInputStream = SecureStreamReader.getDecryptedStream(socket.getInputStream());
+//            dataOutputStream = SecureStreamWriter.getEncryptedStream(socket.getOutputStream());
         } catch (UnknownHostException e) {
             System.out.println(e);
             return;
