@@ -116,9 +116,9 @@ public class ServerThread implements Runnable {
             while ((byteRead = fileInputStream.read(buffer)) != -1) {
                 int currentByte = message.getMessageHeader().getCurrentByte();
 
-//                if (currentByte > 8000) {
-//                    throw new IOException("Simulate read file fail.");
-//                }
+                if (currentByte > 8000) {
+                    throw new IOException("Simulate read file fail.");
+                }
 
                 byte[] payload = Arrays.copyOfRange(buffer, 0, byteRead);
                 currentByte += byteRead;
@@ -152,12 +152,12 @@ public class ServerThread implements Runnable {
         String fileName = message.getMessageHeader().getFileName();
         int fileNameLength = message.getMessageHeader().getFileNameLenght();
 
-//        String fakePath = "Z:/" + serverDirectoryPath + fileName;
-//        Path tempPath = Paths.get(fakePath + fileName + ".tmp");
-//        Path finalPath = Paths.get(fakePath + fileName);
+        String fakePath = "Z:/" + serverDirectoryPath + fileName;
+        Path tempPath = Paths.get(fakePath + fileName + ".tmp");
+        Path finalPath = Paths.get(fakePath + fileName);
 
-        Path tempPath = Paths.get(serverDirectoryPath + fileName + ".tmp");
-        Path finalPath = Paths.get(serverDirectoryPath + fileName);
+//        Path tempPath = Paths.get(serverDirectoryPath + fileName + ".tmp");
+//        Path finalPath = Paths.get(serverDirectoryPath + fileName);
 
         FileOutputStream fileOutputStream = null;
 
