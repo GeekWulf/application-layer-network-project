@@ -208,7 +208,7 @@ public class ServerThread implements Runnable {
 
         int responseStatusCode;
         if  (transmissionSuccess) {
-            responseStatusCode = ResponseStatus.SUCCESS.getStatus();
+            responseStatusCode = ResponseStatus.PUSH_SUCCESS.getStatus();
         } else {
             responseStatusCode = ResponseStatus.PUSH_FAILED.getStatus();
         }
